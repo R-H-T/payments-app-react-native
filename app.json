@@ -11,11 +11,19 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "extra": {
+      "OMISE_PUBLIC_KEY": "your_public_key",
+      "OMISE_SECRET_KEY": "your_secret_key",
+      "OMISE_API_VERSION": "your_api_version"
+    },
+    "assets": [
+      "./assets/fonts/FCSubjectRoundedRegular.ttf"
+    ],
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false
     },
     "android": {
       "adaptiveIcon": {
@@ -26,5 +34,6 @@
     "web": {
       "favicon": "./assets/favicon.png"
     }
+    
   }
 }
