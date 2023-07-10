@@ -150,6 +150,7 @@ const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             details: 'Customer 1',
             });
         }
+        await fetchCards(true);
       } else {
         const error = new CustomError(
           'Could not add new card.\n(Invalid response from server)'
@@ -171,10 +172,10 @@ const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const fetchCards = async () => {
+  const fetchCards = async (force=false) => {
     console.log('Fetching cards for customer', customer);
 
-    if (fetchingCards) return;
+    if (fetchingCards && !force) return;
     
     setFetchingCards(true);
 
