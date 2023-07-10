@@ -13,7 +13,7 @@ const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [fetchingCards, setFetchingCards] = useState(false);
   const [errors, setErrors] = useState<Error[]>([]);
   const [omiseClient] = useState(() => new OmiseClient());
-  const [customer, setCustomer] = useState('cust_test_5wdx6krqaggzqpj1die');
+  const [customer, setCustomer] = useState<string | null>(null);
   const [cards, setCards] = useState<any[]>([]);
 
   const addError = (error: Error) => {
@@ -50,7 +50,7 @@ const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     Alert.alert(title, message, [{ text: 'OK', onPress }], { cancelable });
   };
 
-  const createCustomer = async ({
+  const createCustomerWithCard = async ({
     tokenId,
     cardName,
     brand,
@@ -62,9 +62,9 @@ const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     cardName: string;
     brand: string;
     number: string;
-    details?: string | null;
-    email?: string | null;
-  }) => {
+    details: string;
+    email?: string;
+  }): Promise<any> => {
     console.debug(
       'Creating customer with the following details:',
       tokenId,
@@ -75,12 +75,15 @@ const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     try {
       const customer = await omiseClient.createCustomer({
+        name: cardName,
         details: details ? details : `Details for ${cardName}.`,
         email,
-        token_id: tokenId,
+        card: tokenId,
       });
 
       console.debug('Customer created:', customer);
+
+      setCustomer(customer.id);
     } catch (error) {
       const newError = new Error(
         `Failed to create customer ${cardName} token_id: ${tokenId} (${error.message})`
@@ -136,12 +139,17 @@ const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const hasCard = Object.keys(results).includes('card');
 
       if (object === 'token' && hasCard) {
-        createCustomer({
-          tokenId,
-          cardName,
-          brand,
-          number: `XXXX-XXXX-XXXX-${lastDigits}`,
-        });
+        if (customer) {
+            await omiseClient.addCardToCustomer({ customerId: customer, card: tokenId });
+        } else {
+            await createCustomerWithCard({
+            tokenId,
+            cardName,
+            brand,
+            number: `XXXX-XXXX-XXXX-${lastDigits}`,
+            details: 'Customer 1',
+            });
+        }
       } else {
         const error = new CustomError(
           'Could not add new card.\n(Invalid response from server)'
@@ -167,11 +175,17 @@ const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     console.log('Fetching cards for customer', customer);
 
     if (fetchingCards) return;
+    
+    setFetchingCards(true);
 
     try {
-      setFetchingCards(true);
-      const customerData = await omiseClient.getCustomers(customer);
-      console.debug('Customer fetched:', customerData);
+      const customerCards = await omiseClient.getCustomerCards(customer);
+      
+      console.debug('Customer cards fetched:', customerCards);
+      
+      setCards(customerCards);
+      setFetchingCards(false);
+
     } catch (error) {
       const newError = new Error(
         `Failed to fetch customer ${customer}: (${error.message})`

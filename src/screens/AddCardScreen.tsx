@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import {
     View,
     KeyboardAvoidingView,
@@ -14,6 +14,7 @@ import {
     LayoutChangeEvent,
 } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
+import AppContext from '../contexts/AppContext';
 
 const FormView = ({ navigation }) => {
     // States
@@ -25,6 +26,7 @@ const FormView = ({ navigation }) => {
     const [keyboardHeight, setKeyboardHeight] = useState(0);
     const [currentScrollViewContentOffset, setCurrentScrollViewContentOffset] = useState(0);
     const [scrollViewHeight, setScrollViewHeight] = useState(0);
+    const { submitCard, showAlert } = useContext(AppContext);
 
     // Refs
     const scrollViewRef = useRef<ScrollView>(null);
@@ -85,19 +87,35 @@ const FormView = ({ navigation }) => {
         setIsFormValid(isCardNumberValid && isCardNameValid && isExpiryDateValid && isCVVValid);
     };
 
-    const handleAddCard = () => {
+    const handleAddCard = async () => {
         if (isFormValid) {
-            // TODO: add the card to omise, go back to cards screen
-            alert('Card added!');
-            navigation.navigate('Home');
-        }
-    };
+            const [expMonth, twoDigitYear] = expiryDate.split('/').map(Number);
+            const currentYear = new Date().getFullYear();
+            const centuryPrefix = Math.floor(currentYear / 100);
+            const expYear = centuryPrefix * 100 + twoDigitYear;
+            
+            try {
+                await submitCard({
+                    city: 'Bangkok',
+                    expMonth,
+                    expYear,
+                    name: cardName,
+                    cardNumber,
+                    zip: null,
+                    cvv,
+                })
+                showAlert({ title: 'New card added', message: 'Your card was added successfully', onPress: () => navigation.navigate('Home') });
+            } catch (error) {
+                console.log(error);
+            }
+        };
+    }
 
     const dismissKeyboard = () => {
         Keyboard.dismiss();
     };
 
-    const handleCardNumberChange = (text) => {
+    const handleCardNumberChange = (text: string) => {
         const numericValue = text.replace(/[^0-9]/g, '');
 
         // Insert spaces after every fourth digit
@@ -111,7 +129,7 @@ const FormView = ({ navigation }) => {
         setCardNumber(formattedValue);
     };
 
-    const handleExpiryDateChange = (text) => {
+    const handleExpiryDateChange = (text: string) => {
         const numericValue = text.replace(/[^0-9]/g, '');
 
         // Format the input as MM/YY
