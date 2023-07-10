@@ -1,5 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, KeyboardAvoidingView, Text, TextInput, Image, TouchableOpacity, StyleSheet, StatusBar, Keyboard, TouchableWithoutFeedback, SafeAreaView } from 'react-native';
+import {
+    View,
+    KeyboardAvoidingView,
+    Text,
+    TextInput,
+    Image,
+    TouchableOpacity,
+    StyleSheet,
+    StatusBar,
+    Keyboard,
+    TouchableWithoutFeedback,
+    SafeAreaView,
+    LayoutChangeEvent,
+} from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 
 const FormView = ({ navigation }) => {
@@ -11,13 +24,14 @@ const FormView = ({ navigation }) => {
     const [isFormValid, setIsFormValid] = useState(false);
     const [keyboardHeight, setKeyboardHeight] = useState(0);
     const [currentScrollViewContentOffset, setCurrentScrollViewContentOffset] = useState(0);
+    const [scrollViewHeight, setScrollViewHeight] = useState(0);
 
     // Refs
-    const scrollViewRef = useRef(null);
-    const cardNumberRef = useRef(null);
-    const cardNameRef = useRef(null);
-    const expiryDateRef = useRef(null);
-    const cvvRef = useRef(null);
+    const scrollViewRef = useRef<ScrollView>(null);
+    const cardNumberRef = useRef<TextInput>(null);
+    const cardNameRef = useRef<TextInput>(null);
+    const expiryDateRef = useRef<TextInput>(null);
+    const cvvRef = useRef<TextInput>(null);
 
     // Form validation
     useEffect(() => {
@@ -58,14 +72,14 @@ const FormView = ({ navigation }) => {
     }, []);
 
     const validateForm = () => {
-        cardNum = cardNumber.replace(/\s/g, '');
+        const cardNum = cardNumber.replace(/\s/g, '');
         const isCardNumberValid = cardNum.length === 16 && !isNaN(Number(cardNum));
         const isCardNameValid = cardName.trim().length > 0;
         const isExpiryDateValid = expiryDate.length === 5 && /^\d{2}\/\d{2}$/.test(expiryDate);
         const isCVVValid = cvv.length === 3 && /^\d{3}$/.test(cvv);
         console.log('isCardNumberValid', isCardNumberValid);
-        console.log('isCardNameValid', isCardNameValid); 
-        console.log('isExpiryDateValid', isExpiryDateValid); 
+        console.log('isCardNameValid', isCardNameValid);
+        console.log('isExpiryDateValid', isExpiryDateValid);
         console.log('isCVVValid', isCVVValid);
         // Enable the "Add Card" button if all fields are valid
         setIsFormValid(isCardNumberValid && isCardNameValid && isExpiryDateValid && isCVVValid);
@@ -112,28 +126,38 @@ const FormView = ({ navigation }) => {
         setExpiryDate(formattedValue);
     };
 
-    const handleScroll = (event) => {
+
+    const handleScroll = (event: any) => {
         setCurrentScrollViewContentOffset(event.nativeEvent.contentOffset.y);
     };
 
-    const onFieldFocus = (field) => {
-        field.current.measure((fx, fy, width, height, px, fieldOffsetTop) => {
-            scrollViewRef.current.measure((fx, fy2, width, scrollViewHeight, px, py) => {
-                const scrollToOffset = fieldOffsetTop - (scrollViewHeight / 2);
-                scrollViewRef.current.scrollTo({ y: scrollToOffset, animated: true });
-            });
+
+    const handleLayout = (event: LayoutChangeEvent) => {
+        setScrollViewHeight(event.nativeEvent.layout.height);
+    };
+
+    const onFieldFocus = (field: React.RefObject<TextInput>) => {
+        field.current?.measure((fx, fy, width, height, px, fieldOffsetTop) => {
+            const scrollToOffset = fieldOffsetTop - (scrollViewHeight / 2);
+            scrollViewRef.current?.scrollTo({ y: scrollToOffset, animated: true });
         });
     };
 
-    const focusNextField = (nextField) => {
-        nextField.current.focus();
+    const focusNextField = (nextField: React.RefObject<TextInput>) => {
+        nextField.current?.focus();
     };
 
     return (
         <TouchableWithoutFeedback onPress={dismissKeyboard}>
-            <SafeAreaView style={[styles.container, {},]}>
+            <SafeAreaView style={[styles.container]}>
                 <KeyboardAvoidingView style={{ flex: 1, minHeight: '100%', backgroundColor: 'transparent', }} behavior="padding" keyboardVerticalOffset={100}>
-                    <ScrollView ref={scrollViewRef} onScroll={handleScroll} scrollEventThrottle={16} style={[styles.container, { backgroundColor: 'transparent', }]}>
+                    <ScrollView
+                        ref={scrollViewRef}
+                        onScroll={handleScroll}
+                        scrollEventThrottle={16}
+                        style={[styles.container, { backgroundColor: 'transparent', }]}
+                        onLayout={handleLayout}
+                    >
                         <View style={styles.formItem}>
                             <Text style={[styles.label, { fontWeight: 'bold' }]}>ATM/Debit/Credit Card Number</Text>
                             <TextInput
@@ -249,7 +273,6 @@ const styles = StyleSheet.create({
     input: {
         fontSize: 18,
         fontWeight: '500',
-        height: 32,
         borderWidth: 1,
         borderColor: '#ccc',
         borderRadius: 5,
